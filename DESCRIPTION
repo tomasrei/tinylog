@@ -1,13 +1,22 @@
 Package: tinylog
-Title: What the Package Does (One Line, Title Case)
+Title: Lightweight Script Registry for R Projects
 Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Authors@R:
+    person("Tomas", "Reivinger", , "tomas.reivinger@gmail.com", role = c("aut", "cre"))
+Description: Tracks which scripts produced which output files by maintaining a
+    YAML registry. Two functions cover the full workflow: register_script()
+    records metadata at the top of a script, and record_output() wraps any
+    save call to log the output path.
+License: MIT + file LICENSE
+Imports:
+    yaml
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
 URL: https://github.com/tomasrei/tinylog
 BugReports: https://github.com/tomasrei/tinylog/issues
+Suggests:
+    rstudioapi,
+    testthat (>= 3.0.0),
+    withr
+Config/testthat/edition: 3
