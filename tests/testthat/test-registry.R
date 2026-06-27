@@ -197,3 +197,31 @@ test_that("n_files is correct after purrr::map over multiple outputs", {
   expect_equal(reg$scripts[["test.R"]]$n_files, 3L)
   expect_length(reg$scripts[["test.R"]]$outputs, 3L)
 })
+
+test_that("all three functions work together without source() (simple_main scenario)", {
+  tmp <- withr::local_tempdir()
+  withr::local_dir(tmp)
+  withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
+
+  tinylog_script(
+    name           = "simple_main.R",
+    data_source    = "mtcars (built-in)",
+    description    = "smoke test without source()",
+    record_runtime = FALSE
+  )
+
+  mtcars |> tinylog_dict("mtcars_raw")
+
+  dat <- within(mtcars, efficiency_class <- ifelse(mpg > 20, "High", "Low"))
+  dat |> tinylog_dict("mtcars_clean")
+
+  out <- file.path(tmp, "mtcars_simple.rds")
+  tinylog_output(out)
+
+  reg <- yaml::read_yaml("_tinylog_proj.yaml")
+
+  expect_equal(reg$scripts[["simple_main.R"]]$n_files, 1L)
+  expect_length(reg$data_dictionary[["simple_main.R"]][["mtcars_raw"]]$columns$mpg, 5L)
+  expect_length(reg$data_dictionary[["simple_main.R"]][["mtcars_clean"]]$columns$mpg, 5L)
+  expect_true(!is.null(reg$data_dictionary[["simple_main.R"]][["mtcars_clean"]]$columns$efficiency_class))
+})
