@@ -86,12 +86,6 @@ data_dictionary:
 
 ## Options
 
-Change the default registry filename project-wide:
-
-```{r options}
-options(tinylog.file = "my_registry.yaml")
-```
-
 Pin an important script to the top of the registry:
 
 ```{r pin}

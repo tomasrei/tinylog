@@ -50,11 +50,9 @@
   .script_dir() %||% getwd()
 }
 
-# Resolve the registry file path. Uses the path stored by tinylog_script(), or
-# falls back to the tinylog.file option (default: "_tinylog_proj.yaml").
 .registry_path <- function() {
   getOption(".tinylog_registry_path") %||%
-    file.path(.find_root(), getOption("tinylog.file", "_tinylog_proj.yaml"))
+    file.path(.find_root(), "_tinylog.yaml")
 }
 
 .warn_no_tinylog <- function(nm, rp) {
@@ -171,9 +169,6 @@
 #' @param name Character. Script name. Detected automatically when run via `source()`.
 #' @param pin_to_top Logical. Pin this script to the top of the registry. Default `FALSE`.
 #' @param record_runtime Logical. Record elapsed time on exit. Default `TRUE`.
-#' @param yaml_file Character. Registry file name. Defaults to the `tinylog.file` option,
-#'   or `"_tinylog_proj.yaml"` if unset. Set `options(tinylog.file = "my_log.yaml")` to
-#'   change it project-wide.
 #'
 #' @returns `name` (the script name), invisibly. Called for its side effect of
 #'   creating or updating the YAML registry file in the project root.
@@ -199,14 +194,13 @@ tinylog <- function(data_source,
                              description,
                              name = .get_current_script_name(),
                              pin_to_top = FALSE,
-                             record_runtime = TRUE,
-                             yaml_file = getOption("tinylog.file", "_tinylog_proj.yaml")) {
+                             record_runtime = TRUE) {
   if (is.null(name)) {
     message("tinylog_script: could not detect script name; run via source() or pass name= explicitly")
     return(invisible(NULL))
   }
 
-  registry_path <- file.path(.find_root(), yaml_file)
+  registry_path <- .registry_path()
   options(.tinylog_registry_path = registry_path)
 
   if (file.exists(registry_path)) {
