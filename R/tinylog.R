@@ -57,6 +57,24 @@
     file.path(.find_root(), getOption("tinylog.file", "_tinylog_proj.yaml"))
 }
 
+.warn_no_tinylog <- function(nm, rp) {
+  reg <- if (file.exists(rp)) yaml::read_yaml(rp) else
+    list(`$version` = "0.1.0",
+         `$learn_more` = "https://github.com/tomasrei/tinylog",
+         scripts = list())
+  reg$scripts[[nm]] <- list(
+    warning = paste0(
+      "Did you forget to add tinylog() at the top of '", nm, "'? ",
+      "Outputs and data dictionary entries will not be recorded until tinylog() is called."
+    )
+  )
+  .write_registry(reg, rp)
+  if (!isTRUE(getOption(".tinylog_warned"))) {
+    message("tinylog: warning written to ", rp)
+    options(.tinylog_warned = TRUE)
+  }
+}
+
 .in_knitr <- function() {
   requireNamespace("knitr", quietly = TRUE) &&
     !is.null(tryCatch(knitr::current_input(), error = function(e) NULL))
@@ -340,31 +358,11 @@ tinylog_write <- function(file) {
   script_name <- getOption(".tinylog_current_script")
 
   if (is.null(script_name)) {
-    script_name <- .get_current_script_name()
-    if (!is.null(script_name)) {
-      message("tinylog_output(): tinylog() was not called -- adding a minimal entry for '",
-              script_name, "'. Add tinylog() at the top of your script.")
-      options(.tinylog_current_script = script_name)
-      rp  <- .registry_path()
-      reg <- if (file.exists(rp)) yaml::read_yaml(rp) else
-        list(`$version` = "0.1.0",
-             `$learn_more` = "https://github.com/tomasrei/tinylog",
-             scripts = list())
-      if (is.null(reg$scripts[[script_name]])) {
-        now <- format(Sys.time(), "%Y-%m-%d %H:%M")
-        reg$scripts[[script_name]] <- .order_registry_entry(list(
-          data_source = NA_character_,
-          description = NA_character_,
-          first_run   = now,
-          latest_run  = now,
-          outputs     = "none"
-        ))
-        .write_registry(reg, rp)
-      }
-    } else {
-      message("tinylog_output(): tinylog() was not called and script name could not be detected -- skipping.")
-      return(invisible(file))
-    }
+    .warn_no_tinylog(
+      nm = .get_current_script_name() %||% "<unknown script>",
+      rp = .registry_path()
+    )
+    return(invisible(file))
   }
 
   registry_path <- .registry_path()
@@ -438,7 +436,7 @@ tl_output <- function(...) {
 #' dir.create(tmp)
 #' writeLines("Version: 1.0", file.path(tmp, "DESCRIPTION"))
 #' old_wd <- setwd(tmp)
-#' tinylog_script("raw/data.csv", "example script", name = "script.R", record_runtime = FALSE)
+#' tinylog("raw/data.csv", "example script", name = "script.R", record_runtime = FALSE)
 #' dat <- mtcars |> tinylog_dict(.name = "cars")
 #' setwd(old_wd)
 #' unlink(tmp, recursive = TRUE)
@@ -447,31 +445,11 @@ tinylog_dict <- function(df, .name = NULL, sample_values = TRUE, sample_string_l
   script_name <- getOption(".tinylog_current_script")
 
   if (is.null(script_name)) {
-    script_name <- .get_current_script_name()
-    if (!is.null(script_name)) {
-      message("tinylog_dict(): tinylog() was not called -- adding a minimal entry for '",
-              script_name, "'. Add tinylog() at the top of your script.")
-      options(.tinylog_current_script = script_name)
-      rp  <- .registry_path()
-      reg <- if (file.exists(rp)) yaml::read_yaml(rp) else
-        list(`$version` = "0.1.0",
-             `$learn_more` = "https://github.com/tomasrei/tinylog",
-             scripts = list())
-      if (is.null(reg$scripts[[script_name]])) {
-        now <- format(Sys.time(), "%Y-%m-%d %H:%M")
-        reg$scripts[[script_name]] <- .order_registry_entry(list(
-          data_source = NA_character_,
-          description = NA_character_,
-          first_run   = now,
-          latest_run  = now,
-          outputs     = "none"
-        ))
-        .write_registry(reg, rp)
-      }
-    } else {
-      message("tinylog_dict(): tinylog() was not called and script name could not be detected -- skipping.")
-      return(invisible(df))
-    }
+    .warn_no_tinylog(
+      nm = .get_current_script_name() %||% "<unknown script>",
+      rp = .registry_path()
+    )
+    return(invisible(df))
   }
 
   if (!is.data.frame(df)) stop(

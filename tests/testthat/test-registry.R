@@ -1,6 +1,10 @@
-test_that("tinylog_write() messages and skips without tinylog()", {
+test_that("tinylog_write() writes warning to YAML without tinylog()", {
+  tmp <- withr::local_tempdir()
+  withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
-  expect_message(tinylog_write("some/file.png"), "tinylog\\(\\) was not called")
+  tinylog_write("some/file.png")
+  reg <- yaml::read_yaml("_tinylog_proj.yaml")
+  expect_true(any(vapply(reg$scripts, \(s) grepl("tinylog()", s$warning %||% "", fixed = TRUE), logical(1))))
 })
 
 test_that("tinylog() sets the script name option", {
@@ -40,9 +44,13 @@ test_that("tinylog_write() registers path and returns it", {
   expect_true(any(grepl("output.png", unlist(reg$scripts[["test.R"]]$outputs))))
 })
 
-test_that("tinylog_dict() messages and skips without tinylog()", {
+test_that("tinylog_dict() writes warning to YAML without tinylog()", {
+  tmp <- withr::local_tempdir()
+  withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
-  expect_message(tinylog_dict(data.frame(x = 1)), "tinylog\\(\\) was not called")
+  tinylog_dict(data.frame(x = 1))
+  reg <- yaml::read_yaml("_tinylog_proj.yaml")
+  expect_true(any(vapply(reg$scripts, \(s) grepl("tinylog()", s$warning %||% "", fixed = TRUE), logical(1))))
 })
 
 test_that("tinylog_dict() errors on non-data-frame", {
