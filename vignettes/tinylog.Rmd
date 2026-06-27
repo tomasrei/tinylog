@@ -19,12 +19,11 @@ stays current automatically.
 
 | Function | Where to use it |
 |---|---|
-| `tinylog_script()` | Top of every script |
-| `tinylog_output()` | Inline around any file path you save to |
+| `tinylog()` | Top of every script |
+| `tinylog_write()` | Inline around any file path you save to |
 | `tinylog_dict()` | After reading/cleaning a data frame |
 
-Short aliases (`tl_script()`, `tl_output()`, `tl_dict()`) are available for
-interactive use.
+Short aliases (`tl_write()`, `tl_dict()`) are available for interactive use.
 
 ## A minimal workflow
 
@@ -32,7 +31,7 @@ interactive use.
 library(tinylog)
 
 # --- top of 01_clean.R ---
-tinylog_script(
+tinylog(
   data_source = "data/raw/survey.csv",
   description = "Clean and reshape survey data"
 )
@@ -42,7 +41,7 @@ survey <- read.csv("data/raw/survey.csv") |>
   tinylog_dict()                           # records column names + samples
 
 # save — wrap the file path with tinylog_output()
-write.csv(survey, tinylog_output("data/clean/survey_clean.csv"))
+write.csv(survey, tinylog_write("data/clean/survey_clean.csv"))
 ```
 
 That is all you need to add. The registry file (`_tinylog_proj.yaml`) is
@@ -96,7 +95,7 @@ options(tinylog.file = "my_registry.yaml")
 Pin an important script to the top of the registry:
 
 ```{r pin}
-tinylog_script(
+tinylog(
   data_source = "data/raw/master.csv",
   description = "Master data preparation",
   pin_to_top  = TRUE

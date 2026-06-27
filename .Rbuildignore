@@ -2,5 +2,7 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^vignettes/.*\.html$
+^cran-comments\.md$
+^TODO\.md$
 ^doc$
 ^Meta$

@@ -1,14 +1,14 @@
-test_that("tinylog_output() errors without tinylog_script()", {
+test_that("tinylog_write() messages and skips without tinylog()", {
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
-  expect_error(tinylog_output("some/file.png"), "tinylog_script")
+  expect_message(tinylog_write("some/file.png"), "tinylog\\(\\) was not called")
 })
 
-test_that("tinylog_script() sets the script name option", {
+test_that("tinylog() sets the script name option", {
   tmp <- withr::local_tempdir()
   withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
 
-  tinylog_script(
+  tinylog(
     name        = "test.R",
     data_source = "none",
     description = "test",
@@ -19,12 +19,12 @@ test_that("tinylog_script() sets the script name option", {
   expect_true(file.exists("_tinylog_proj.yaml"))
 })
 
-test_that("tinylog_output() registers path and returns it", {
+test_that("tinylog_write() registers path and returns it", {
   tmp <- withr::local_tempdir()
   withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
 
-  tinylog_script(
+  tinylog(
     name        = "test.R",
     data_source = "none",
     description = "test",
@@ -32,7 +32,7 @@ test_that("tinylog_output() registers path and returns it", {
   )
 
   path <- file.path(tmp, "output.png")
-  result <- tinylog_output(path)
+  result <- tinylog_write(path)
 
   expect_equal(result, path)
 
@@ -40,9 +40,9 @@ test_that("tinylog_output() registers path and returns it", {
   expect_true(any(grepl("output.png", unlist(reg$scripts[["test.R"]]$outputs))))
 })
 
-test_that("tinylog_dict() errors without tinylog_script()", {
+test_that("tinylog_dict() messages and skips without tinylog()", {
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
-  expect_error(tinylog_dict(data.frame(x = 1)), "tinylog_script")
+  expect_message(tinylog_dict(data.frame(x = 1)), "tinylog\\(\\) was not called")
 })
 
 test_that("tinylog_dict() errors on non-data-frame", {
@@ -55,7 +55,7 @@ test_that("tinylog_dict() records columns and sample values in data_dictionary",
   withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
 
-  tinylog_script(
+  tinylog(
     name        = "test.R",
     data_source = "none",
     description = "test",
@@ -78,7 +78,7 @@ test_that("tinylog_dict() auto-names entry from df variable name", {
   withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
 
-  tinylog_script(
+  tinylog(
     name        = "test.R",
     data_source = "none",
     description = "test",
@@ -100,7 +100,7 @@ test_that("tinylog_dict() warns and overwrites on duplicate df name", {
   withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
 
-  tinylog_script(
+  tinylog(
     name        = "test.R",
     data_source = "none",
     description = "test",
@@ -121,7 +121,7 @@ test_that("tinylog_dict() omits sample values when sample_values = FALSE", {
   withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
 
-  tinylog_script(
+  tinylog(
     name        = "test.R",
     data_source = "none",
     description = "test",
@@ -141,7 +141,7 @@ test_that("tinylog_dict() truncates long strings at sample_string_length", {
   withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
 
-  tinylog_script(
+  tinylog(
     name        = "test.R",
     data_source = "none",
     description = "test",
@@ -163,7 +163,7 @@ test_that("tinylog_dict() respects sample_string_length = Inf", {
   withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
 
-  tinylog_script(
+  tinylog(
     name        = "test.R",
     data_source = "none",
     description = "test",
@@ -184,7 +184,7 @@ test_that("n_files is correct after lapply over multiple outputs", {
   withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
 
-  tinylog_script(
+  tinylog(
     name        = "test.R",
     data_source = "none",
     description = "test",
@@ -192,7 +192,7 @@ test_that("n_files is correct after lapply over multiple outputs", {
   )
 
   paths <- file.path(tmp, paste0("plot_", 1:3, ".png"))
-  lapply(paths, tinylog_output)
+  lapply(paths, tinylog_write)
 
   reg <- yaml::read_yaml("_tinylog_proj.yaml")
   expect_equal(reg$scripts[["test.R"]]$n_files, 3L)
@@ -205,7 +205,7 @@ test_that("n_files is correct after purrr::map over multiple outputs", {
   withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
 
-  tinylog_script(
+  tinylog(
     name        = "test.R",
     data_source = "none",
     description = "test",
@@ -213,7 +213,7 @@ test_that("n_files is correct after purrr::map over multiple outputs", {
   )
 
   paths <- file.path(tmp, paste0("plot_", 1:3, ".png"))
-  purrr::map(paths, tinylog_output)
+  purrr::map(paths, tinylog_write)
 
   reg <- yaml::read_yaml("_tinylog_proj.yaml")
   expect_equal(reg$scripts[["test.R"]]$n_files, 3L)
@@ -225,7 +225,7 @@ test_that("all three functions work together without source() (simple_main scena
   withr::local_dir(tmp)
   withr::local_options(.tinylog_current_script = NULL, .tinylog_registry_path = NULL)
 
-  tinylog_script(
+  tinylog(
     name           = "simple_main.R",
     data_source    = "mtcars (built-in)",
     description    = "smoke test without source()",
@@ -238,7 +238,7 @@ test_that("all three functions work together without source() (simple_main scena
   dat |> tinylog_dict()
 
   out <- file.path(tmp, "mtcars_simple.rds")
-  tinylog_output(out)
+  tinylog_write(out)
 
   reg <- yaml::read_yaml("_tinylog_proj.yaml")
 

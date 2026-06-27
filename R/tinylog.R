@@ -145,7 +145,8 @@
 #' Creates or updates an entry in `_registry.yaml` and sets the script name
 #' so that [tinylog_output()] can associate outputs with it.
 #'
-#' `tl_script()` is a short alias for `tinylog_script()`.
+#' `tinylog_script()` and `tl_script()` are deprecated aliases kept for
+#' backward compatibility.
 #'
 #' @param data_source Character. The input data this script reads (path or description).
 #' @param description Character. One-line description of what the script does.
@@ -158,6 +159,7 @@
 #'
 #' @returns `name` (the script name), invisibly. Called for its side effect of
 #'   creating or updating the YAML registry file in the project root.
+#' @param ... Arguments passed to [tinylog()] (deprecated aliases only).
 #' @export
 #'
 #' @examples
@@ -166,7 +168,7 @@
 #' dir.create(tmp)
 #' writeLines("Version: 1.0", file.path(tmp, "DESCRIPTION"))
 #' old_wd <- setwd(tmp)
-#' tinylog_script(
+#' tinylog(
 #'   data_source    = "data/raw/survey.csv",
 #'   description    = "Clean and reshape survey data",
 #'   name           = "01_clean.R",
@@ -175,7 +177,7 @@
 #' setwd(old_wd)
 #' unlink(tmp, recursive = TRUE)
 #' }
-tinylog_script <- function(data_source,
+tinylog <- function(data_source,
                              description,
                              name = .get_current_script_name(),
                              pin_to_top = FALSE,
@@ -213,7 +215,7 @@ tinylog_script <- function(data_source,
 
   if (sample(20L, 1L) == 1L) {
     message(
-      "tinylog tip: place tinylog_script() at the very top of '", name, "' ",
+      "tinylog tip: place tinylog() at the very top of '", name, "' ",
       "(before library() calls) so the runtime covers the full script, not just the code after it."
     )
   }
@@ -259,6 +261,7 @@ tinylog_script <- function(data_source,
       } else {
         message("runtime tracking requires source() -- run via source(here(\"scripts/", name, "\")) to record elapsed time")
 
+
       }
     } else {
       .write_runtime <- local({
@@ -291,9 +294,19 @@ tinylog_script <- function(data_source,
   invisible(name)
 }
 
-#' @rdname tinylog_script
+#' @rdname tinylog
 #' @export
-tl_script <- tinylog_script
+tinylog_script <- function(...) {
+  .Deprecated("tinylog")
+  tinylog(...)
+}
+
+#' @rdname tinylog
+#' @export
+tl_script <- function(...) {
+  .Deprecated("tinylog")
+  tinylog(...)
+}
 
 #' Record an output file path in the registry
 #'
@@ -301,13 +314,15 @@ tl_script <- tinylog_script
 #' current script's registry entry and returns the path unchanged, so it can be
 #' dropped inline into any save function.
 #'
-#' `tl_output()` is a short alias for `tinylog_output()`.
+#' `tinylog_output()` and `tl_output()` are deprecated aliases kept for
+#' backward compatibility; use `tl_write()` for the short form.
 #'
-#' Requires [tinylog_script()] to have been called first in the same session.
+#' Requires [tinylog()] to have been called first in the same session.
 #'
 #' @param file Character. Absolute path to the output file.
 #'
 #' @return `file`, invisibly.
+#' @param ... Arguments passed to [tinylog_write()] (deprecated aliases only).
 #' @export
 #'
 #' @examples
@@ -316,18 +331,43 @@ tl_script <- tinylog_script
 #' dir.create(tmp)
 #' writeLines("Version: 1.0", file.path(tmp, "DESCRIPTION"))
 #' old_wd <- setwd(tmp)
-#' tinylog_script("raw/data.csv", "example script", name = "script.R", record_runtime = FALSE)
-#' out <- tinylog_output(file.path(tmp, "output.csv"))
+#' tinylog("raw/data.csv", "example script", name = "script.R", record_runtime = FALSE)
+#' out <- tinylog_write(file.path(tmp, "output.csv"))
 #' setwd(old_wd)
 #' unlink(tmp, recursive = TRUE)
 #' }
-tinylog_output <- function(file) {
-  registry_path <- .registry_path()
-  script_name   <- getOption(".tinylog_current_script")
+tinylog_write <- function(file) {
+  script_name <- getOption(".tinylog_current_script")
 
-  if (is.null(script_name)) stop(
-    "tinylog_output() requires tinylog_script() to have been called first."
-  )
+  if (is.null(script_name)) {
+    script_name <- .get_current_script_name()
+    if (!is.null(script_name)) {
+      message("tinylog_output(): tinylog() was not called -- adding a minimal entry for '",
+              script_name, "'. Add tinylog() at the top of your script.")
+      options(.tinylog_current_script = script_name)
+      rp  <- .registry_path()
+      reg <- if (file.exists(rp)) yaml::read_yaml(rp) else
+        list(`$version` = "0.1.0",
+             `$learn_more` = "https://github.com/tomasrei/tinylog",
+             scripts = list())
+      if (is.null(reg$scripts[[script_name]])) {
+        now <- format(Sys.time(), "%Y-%m-%d %H:%M")
+        reg$scripts[[script_name]] <- .order_registry_entry(list(
+          data_source = NA_character_,
+          description = NA_character_,
+          first_run   = now,
+          latest_run  = now,
+          outputs     = "none"
+        ))
+        .write_registry(reg, rp)
+      }
+    } else {
+      message("tinylog_output(): tinylog() was not called and script name could not be detected -- skipping.")
+      return(invisible(file))
+    }
+  }
+
+  registry_path <- .registry_path()
   if (!file.exists(registry_path)) return(invisible(file))
 
   root     <- .find_root()
@@ -354,9 +394,23 @@ tinylog_output <- function(file) {
   invisible(file)
 }
 
-#' @rdname tinylog_output
+#' @rdname tinylog_write
 #' @export
-tl_output <- tinylog_output
+tl_write <- tinylog_write
+
+#' @rdname tinylog_write
+#' @export
+tinylog_output <- function(...) {
+  .Deprecated("tinylog_write")
+  tinylog_write(...)
+}
+
+#' @rdname tinylog_write
+#' @export
+tl_output <- function(...) {
+  .Deprecated("tinylog_write")
+  tinylog_write(...)
+}
 
 #' Add a data frame to the project data dictionary
 #'
@@ -391,9 +445,35 @@ tl_output <- tinylog_output
 #' }
 tinylog_dict <- function(df, .name = NULL, sample_values = TRUE, sample_string_length = 18L) {
   script_name <- getOption(".tinylog_current_script")
-  if (is.null(script_name)) stop(
-    "tinylog_dict() requires tinylog_script() to have been called first."
-  )
+
+  if (is.null(script_name)) {
+    script_name <- .get_current_script_name()
+    if (!is.null(script_name)) {
+      message("tinylog_dict(): tinylog() was not called -- adding a minimal entry for '",
+              script_name, "'. Add tinylog() at the top of your script.")
+      options(.tinylog_current_script = script_name)
+      rp  <- .registry_path()
+      reg <- if (file.exists(rp)) yaml::read_yaml(rp) else
+        list(`$version` = "0.1.0",
+             `$learn_more` = "https://github.com/tomasrei/tinylog",
+             scripts = list())
+      if (is.null(reg$scripts[[script_name]])) {
+        now <- format(Sys.time(), "%Y-%m-%d %H:%M")
+        reg$scripts[[script_name]] <- .order_registry_entry(list(
+          data_source = NA_character_,
+          description = NA_character_,
+          first_run   = now,
+          latest_run  = now,
+          outputs     = "none"
+        ))
+        .write_registry(reg, rp)
+      }
+    } else {
+      message("tinylog_dict(): tinylog() was not called and script name could not be detected -- skipping.")
+      return(invisible(df))
+    }
+  }
+
   if (!is.data.frame(df)) stop(
     "tinylog_dict() requires a data frame."
   )
