@@ -4,5 +4,18 @@ template:
   bootswatch: flatly
   light-switch: false
   bslib:
-    navbar-bg: "body-tertiary"
+    primary: "#4169E1"
+    link-color: "#4169E1"
+    link-hover-color: "#1a3aad"
+    navbar-light-color: "#555555"
+    navbar-light-hover-color: "#000000"
+    navbar-light-active-color: "#000000"
+    navbar-light-brand-color: "#000000"
+    navbar-light-brand-hover-color: "#000000"
+navbar:
+  bg: body-tertiary
+  type: light
 
+authors:
+  Tomas Reivinger:
+    roles: [aut, cre]
