@@ -39,5 +39,6 @@ withr::with_tempdir({
     out <- tinytrail_write("output/results.csv")
   })
 })
+#> Error in .teardown_write_hooks(): could not find function ".teardown_write_hooks"
 # }
 ```

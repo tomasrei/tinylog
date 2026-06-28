@@ -59,5 +59,6 @@ withr::with_tempdir({
     dat <- mtcars |> tinytrail_dict(.name = "cars")
   })
 })
+#> Error in .teardown_write_hooks(): could not find function ".teardown_write_hooks"
 # }
 ```
