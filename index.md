@@ -53,7 +53,9 @@ lm(age ~ response, data = dat) |>
   save_tt(file = tinytrail_write("output/tab1.tex"))
 ```
 
-This creates or updates `_tinytrail.yaml`:
+[`tinytrail()`](https://tinytrail-r.github.io/tinytrail/reference/tinytrail.md)
+automatically captures the file name and creates or updates
+`_tinytrail.yaml`:
 
 ``` yaml
 scripts:
@@ -68,6 +70,16 @@ scripts:
     - output/fig1.tex
     - output/tab1.tex
 ```
+
+Since
+[`tinytrail_write()`](https://tinytrail-r.github.io/tinytrail/reference/tinytrail_write.md)
+is just a thin wrapper
+
+``` yaml
+ggsave(file = tinytrail_write("output/tab1.tex"))
+```
+
+works as expected.
 
 Optionally, pipe data frames through
 [`tinytrail_dict()`](https://tinytrail-r.github.io/tinytrail/reference/tinytrail_dict.md)
