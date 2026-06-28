@@ -1,158 +1,68 @@
-`%||%` <- function(x, y) if (is.null(x)) y else x
+# Public API: tinytrail(), tinytrail_write(), tinytrail_dict()
+#
+# Sub-functions used exclusively by the public API are defined first.
 
-.has_root_marker <- function(path) {
-  length(list.files(path, pattern = "\\.Rproj$")) > 0 ||
-    file.exists(file.path(path, "DESCRIPTION"))       ||
-    file.exists(file.path(path, ".here"))             ||
-    file.exists(file.path(path, ".git"))
-}
-
-# Directory of the currently executing script (not necessarily getwd())
-.script_dir <- function() {
-  # source() call stack
-  idx <- which(vapply(sys.calls(), \(x) deparse(x[[1]]) == "source", logical(1)))
-  if (length(idx) > 0) {
-    frame <- sys.frame(idx[length(idx)])
-    path  <- if (is.character(frame$ofile)) frame$ofile
-              else if (is.character(frame$file)) frame$file
-              else NULL
-    if (!is.null(path) && nzchar(path))
-      return(dirname(normalizePath(path, mustWork = FALSE)))
-  }
-  # knitr / Quarto rendering
-  if (requireNamespace("knitr", quietly = TRUE)) {
-    input <- tryCatch(knitr::current_input(dir = TRUE), error = function(e) NULL)
-    if (is.character(input) && nzchar(input))
-      return(dirname(normalizePath(input, mustWork = FALSE)))
-  }
-  # Rscript path/to/script.R
-  file_arg <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
-  if (length(file_arg) > 0) {
-    path <- sub("^--file=", "", file_arg[[1L]])
-    return(dirname(normalizePath(path, mustWork = FALSE)))
-  }
-  NULL
-}
-
-# Walk up from getwd() -- and also from the script's own directory -- to find
-# the project root (.Rproj, DESCRIPTION, .here, .git).
-.find_root <- function() {
-  starts <- unique(c(getwd(), .script_dir()))
-  for (start in starts) {
-    path <- start
-    for (i in seq_len(20L)) {
-      if (.has_root_marker(path)) return(path)
-      parent <- dirname(path)
-      if (parent == path) break
-      path <- parent
-    }
-  }
-  .script_dir() %||% getwd()
-}
-
-.registry_path <- function() {
-  getOption(".tinytrail_registry_path") %||%
-    file.path(.find_root(), "_tinytrail.yaml")
-}
-
-.warn_no_tinytrail <- function(nm, rp) {
-  reg <- if (file.exists(rp)) yaml::read_yaml(rp) else
-    list(`$version` = "0.1.0",
-         `$learn_more` = "https://github.com/tomasrei/tinytrail",
-         scripts = list())
-  reg$scripts[[nm]] <- list(
-    warning = paste0(
-      "Did you forget to add tinytrail() at the top of '", nm, "'? ",
-      "Outputs and data dictionary entries will not be recorded until tinytrail() is called."
-    )
+.build_script_entry <- function(description, data_source, pin_to_top, first_run, now) {
+  entry <- list(
+    description = description,
+    first_run   = first_run %||% now,
+    latest_run  = now,
+    outputs     = "none"
   )
-  .write_registry(reg, rp)
-  if (!isTRUE(getOption(".tinytrail_warned"))) {
-    message("tinytrail: warning written to ", rp)
-    options(.tinytrail_warned = TRUE)
-  }
+  if (!is.null(data_source)) entry$data_source <- data_source
+  if (pin_to_top) entry$pin_to_top <- TRUE
+  entry
 }
 
-.in_knitr <- function() {
-  requireNamespace("knitr", quietly = TRUE) &&
-    !is.null(tryCatch(knitr::current_input(), error = function(e) NULL))
+.sort_scripts <- function(scripts) {
+  all_names <- names(scripts)
+  pinned    <- all_names[vapply(scripts[all_names], \(s) isTRUE(s$pin_to_top), logical(1))]
+  rest      <- sort(all_names[!all_names %in% pinned])
+  lapply(scripts[c(pinned, rest)], .order_registry_entry)
 }
 
-.order_registry_entry <- function(entry) {
-  key_order <- c("description", "data_source", "first_run", "latest_run", "script_runtime", "n_files", "outputs")
-  entry[c(intersect(key_order, names(entry)), setdiff(names(entry), key_order))]
-}
-
-# Format a single scalar value for inline YAML
-.yaml_scalar <- function(v) {
-  if (is.null(v) || (length(v) == 1L && is.na(v))) return("null")
-  if (is.logical(v)) return(if (isTRUE(v)) "true" else "false")
-  if (is.numeric(v)) return(as.character(v))
-  paste0("'", gsub("'", "''", as.character(v)), "'")
-}
-
-# Serialize the data_dictionary section with inline (flow) sequences for column samples
-.format_dd_yaml <- function(dd) {
-  lines <- "data_dictionary:"
-  for (script in names(dd)) {
-    lines <- c(lines, paste0("  ", script, ":"))
-    for (input_name in names(dd[[script]])) {
-      lines <- c(lines, paste0("    ", input_name, ":"))
-      cols <- dd[[script]][[input_name]]$columns
-      if (!is.null(names(cols))) {
-        # sample_values = TRUE: named list -- one inline sequence per column
-        lines <- c(lines, "      columns:")
-        for (col_name in names(cols)) {
-          vals <- vapply(cols[[col_name]], .yaml_scalar, character(1L))
-          lines <- c(lines, paste0("        ", .yaml_scalar(col_name), ": [", paste(vals, collapse = ", "), "]"))
-        }
-      } else {
-        # sample_values = FALSE: flat list of column names, also inline
-        col_scalars <- vapply(unlist(cols), .yaml_scalar, character(1L))
-        lines <- c(lines, paste0("      columns: [", paste(col_scalars, collapse = ", "), "]"))
-      }
+.setup_runtime_hook <- function(script_name, registry_path, start_sec, source_idx) {
+  record_elapsed <- local({
+    script_name   <- script_name
+    registry_path <- registry_path
+    start_sec     <- start_sec
+    function() {
+      elapsed_min <- round((as.numeric(Sys.time()) - start_sec) / 60, 1)
+      if (!file.exists(registry_path)) return()
+      registry <- yaml::read_yaml(registry_path)
+      if (is.null(registry$scripts[[script_name]])) return()
+      registry$scripts[[script_name]]$script_runtime <- sprintf("%.1f min", elapsed_min)
+      registry$scripts <- lapply(registry$scripts, .order_registry_entry)
+      .write_registry(registry, registry_path)
+      message(script_name, ": ", sprintf("%.1f min", elapsed_min), " elapsed")
     }
-  }
-  paste(lines, collapse = "\n")
-}
+  })
 
-# Write the full registry, using custom inline formatting for data_dictionary
-.write_registry <- function(registry, path) {
-  dd   <- registry$data_dictionary
-  main <- registry[names(registry) != "data_dictionary"]
-  main_yaml <- yaml::as.yaml(main)
-  if (is.null(dd) || length(dd) == 0L) {
-    cat(main_yaml, file = path)
+  if (length(source_idx) == 0L) {
+    if (.in_knitr()) {
+      old_hook <- knitr::knit_hooks$get("document")
+      knitr::knit_hooks$set(document = local({
+        record_elapsed <- record_elapsed
+        old_hook       <- old_hook
+        function(x) {
+          record_elapsed()
+          if (is.function(old_hook)) old_hook(x) else x
+        }
+      }))
+    } else {
+      message(
+        "runtime tracking requires source() -- run via source(here(\"scripts/", script_name, "\")) ",
+        "to record elapsed time"
+      )
+    }
   } else {
-    cat(main_yaml, .format_dd_yaml(dd), "\n", sep = "", file = path)
+    idx_val <- source_idx[length(source_idx)]
+    do.call(
+      on.exit,
+      list(bquote(.(record_elapsed)()), add = TRUE, after = TRUE),
+      envir = sys.frame(idx_val)
+    )
   }
-  invisible(NULL)
-}
-
-.get_current_script_name <- function() {
-  # 1. source() call stack -- standard usage
-  idx <- which(vapply(sys.calls(), \(x) deparse(x[[1]]) == "source", logical(1)))
-  if (length(idx) > 0) {
-    frame <- sys.frame(idx[length(idx)])
-    path  <- if (is.character(frame$ofile)) frame$ofile
-              else if (is.character(frame$file)) frame$file
-              else NULL
-    if (!is.null(path) && nzchar(path)) return(basename(path))
-  }
-  # 2. knitr / Quarto rendering
-  if (requireNamespace("knitr", quietly = TRUE)) {
-    input <- tryCatch(knitr::current_input(), error = function(e) NULL)
-    if (is.character(input) && nzchar(input)) return(basename(input))
-  }
-  # 3. Rscript path/to/script.R
-  file_arg <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
-  if (length(file_arg) > 0) return(basename(sub("^--file=", "", file_arg[[1L]])))
-  # 4. RStudio interactive fallback
-  if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
-    path <- tryCatch(rstudioapi::getSourceEditorContext()$path, error = function(e) NULL)
-    if (is.character(path) && nzchar(path)) return(basename(path))
-  }
-  NULL
 }
 
 #' Register a script in the project trail
@@ -179,6 +89,7 @@
 #' dir.create(tmp)
 #' writeLines("Version: 1.0", file.path(tmp, "DESCRIPTION"))
 #' old_wd <- setwd(tmp)
+#' options(.tinytrail_registry_path = NULL, .tinytrail_current_script = NULL)
 #' tinytrail(
 #'   description    = "Clean and reshape survey data",
 #'   data_source    = "Current Population Survey (BLS)",
@@ -201,101 +112,39 @@ tinytrail <- function(description,
   registry_path <- .registry_path()
   options(.tinytrail_registry_path = registry_path)
 
-  if (file.exists(registry_path)) {
-    registry <- yaml::read_yaml(registry_path)
-  } else {
-    registry <- list(
-      `$version`    = "0.1.0",
-      `$learn_more` = "https://github.com/tomasrei/tinytrail",
-      scripts       = list()
-    )
-  }
-
-  now <- format(Sys.time(), "%Y-%m-%d %H:%M")
-  entry <- list(
+  registry <- .read_or_init_registry(registry_path)
+  now      <- format(Sys.time(), "%Y-%m-%d %H:%M")
+  entry    <- .build_script_entry(
     description = description,
-    first_run   = registry$scripts[[name]]$first_run %||% now,
-    latest_run  = now,
-    outputs     = "none"
+    data_source = data_source,
+    pin_to_top  = pin_to_top,
+    first_run   = registry$scripts[[name]]$first_run,
+    now         = now
   )
-  if (!is.null(data_source)) entry$data_source <- data_source
-  if (pin_to_top) entry$pin_to_top <- TRUE
-  registry$scripts[[name]] <- entry
+  registry$scripts[[name]]         <- entry
   registry$data_dictionary[[name]] <- NULL
 
-  if (sample(20L, 1L) == 1L) {
+  if (sample(.TIP_FREQUENCY, 1L) == 1L) {
     message(
       "tinytrail tip: place tinytrail() at the very top of '", name, "' ",
       "(before library() calls) so the runtime covers the full script, not just the code after it."
     )
   }
 
-  all_names <- names(registry$scripts)
-  pinned    <- all_names[vapply(registry$scripts[all_names], \(s) isTRUE(s$pin_to_top), logical(1))]
-  rest      <- sort(all_names[!all_names %in% pinned])
-  registry$scripts <- lapply(registry$scripts[c(pinned, rest)], .order_registry_entry)
+  registry$scripts <- .sort_scripts(registry$scripts)
   .write_registry(registry, registry_path)
 
   options(.tinytrail_current_script = name)
 
   if (record_runtime) {
-    .start_sec <- as.numeric(Sys.time())
-    .name      <- name
-    .reg_path  <- registry_path
-    .order_fn  <- .order_registry_entry
-    idx <- which(vapply(sys.calls(), \(x) deparse(x[[1]]) == "source", logical(1)))
-    if (length(idx) == 0L) {
-      if (.in_knitr()) {
-        .old_hook <- knitr::knit_hooks$get("document")
-        knitr::knit_hooks$set(document = local({
-          start    <- .start_sec
-          nm       <- .name
-          rp       <- .reg_path
-          of       <- .order_fn
-          old_hook <- .old_hook
-          function(x) {
-            .elapsed <- round((as.numeric(Sys.time()) - start) / 60, 1)
-            if (file.exists(rp)) {
-              .reg <- yaml::read_yaml(rp)
-              if (!is.null(.reg$scripts[[nm]])) {
-                .reg$scripts[[nm]]$script_runtime <- sprintf("%.1f min", .elapsed)
-                .reg$scripts <- lapply(.reg$scripts, of)
-                .write_registry(.reg, rp)
-                message(nm, ": ", sprintf("%.1f min", .elapsed), " elapsed")
-              }
-            }
-            if (is.function(old_hook)) old_hook(x) else x
-          }
-        }))
-      } else {
-        message("runtime tracking requires source() -- run via source(here(\"scripts/", name, "\")) to record elapsed time")
-      }
-    } else {
-      .write_runtime <- local({
-        start <- .start_sec
-        nm    <- name
-        rp    <- registry_path
-        of    <- .order_registry_entry
-        function() {
-          .elapsed <- round((as.numeric(Sys.time()) - start) / 60, 1)
-          if (file.exists(rp)) {
-            .reg <- yaml::read_yaml(rp)
-            if (!is.null(.reg$scripts[[nm]])) {
-              .reg$scripts[[nm]]$script_runtime <- sprintf("%.1f min", .elapsed)
-              .reg$scripts <- lapply(.reg$scripts, of)
-              .write_registry(.reg, rp)
-              message(nm, ": ", sprintf("%.1f min", .elapsed), " elapsed")
-            }
-          }
-        }
-      })
-      .idx_val <- idx[length(idx)]
-      do.call(
-        on.exit,
-        list(bquote(.(.write_runtime)()), add = TRUE, after = TRUE),
-        envir = sys.frame(.idx_val)
-      )
-    }
+    start_sec  <- as.numeric(Sys.time())
+    source_idx <- which(vapply(sys.calls(), \(x) deparse(x[[1]]) == "source", logical(1)))
+    .setup_runtime_hook(
+      script_name   = name,
+      registry_path = registry_path,
+      start_sec     = start_sec,
+      source_idx    = source_idx
+    )
   }
 
   invisible(name)
@@ -320,6 +169,7 @@ tinytrail <- function(description,
 #' dir.create(tmp)
 #' writeLines("Version: 1.0", file.path(tmp, "DESCRIPTION"))
 #' old_wd <- setwd(tmp)
+#' options(.tinytrail_registry_path = NULL, .tinytrail_current_script = NULL)
 #' tinytrail("raw/data.csv", "example script", name = "script.R", record_runtime = FALSE)
 #' out <- tinytrail_write(file.path(tmp, "output.csv"))
 #' setwd(old_wd)
@@ -330,8 +180,8 @@ tinytrail_write <- function(file) {
 
   if (is.null(script_name)) {
     .warn_no_tinytrail(
-      nm = .get_current_script_name() %||% "<unknown script>",
-      rp = .registry_path()
+      script_name   = .get_current_script_name() %||% "<unknown script>",
+      registry_path = .registry_path()
     )
     return(invisible(file))
   }
@@ -352,7 +202,7 @@ tinytrail_write <- function(file) {
 
   all_out <- unique(c(existing, rel_file))
   outputs <- all_out[order(dirname(all_out),
-                           startsWith(basename(all_out), "sensitivity_"),
+                           startsWith(basename(all_out), .SENSITIVITY_PREFIX),
                            basename(all_out))]
 
   registry$scripts[[script_name]]$outputs <- outputs
@@ -388,6 +238,7 @@ tinytrail_write <- function(file) {
 #' dir.create(tmp)
 #' writeLines("Version: 1.0", file.path(tmp, "DESCRIPTION"))
 #' old_wd <- setwd(tmp)
+#' options(.tinytrail_registry_path = NULL, .tinytrail_current_script = NULL)
 #' tinytrail("raw/data.csv", "example script", name = "script.R", record_runtime = FALSE)
 #' dat <- mtcars |> tinytrail_dict(.name = "cars")
 #' setwd(old_wd)
@@ -398,28 +249,25 @@ tinytrail_dict <- function(df, .name = NULL, sample_values = TRUE, sample_string
 
   if (is.null(script_name)) {
     .warn_no_tinytrail(
-      nm = .get_current_script_name() %||% "<unknown script>",
-      rp = .registry_path()
+      script_name   = .get_current_script_name() %||% "<unknown script>",
+      registry_path = .registry_path()
     )
     return(invisible(df))
   }
 
-  if (!is.data.frame(df)) stop(
-    "tinytrail_dict() requires a data frame."
-  )
+  if (!is.data.frame(df)) stop("tinytrail_dict() requires a data frame.")
 
   registry_path <- .registry_path()
   if (!file.exists(registry_path)) return(invisible(df))
 
   registry <- yaml::read_yaml(registry_path)
-
   if (is.null(registry$data_dictionary))
     registry$data_dictionary <- list()
   if (is.null(registry$data_dictionary[[script_name]]))
     registry$data_dictionary[[script_name]] <- list()
 
   auto_name <- deparse(substitute(df))
-  name <- if (!is.null(.name)) {
+  dict_name <- if (!is.null(.name)) {
     .name
   } else if (grepl("^[A-Za-z._][A-Za-z0-9._]*$", auto_name)) {
     auto_name
@@ -428,30 +276,23 @@ tinytrail_dict <- function(df, .name = NULL, sample_values = TRUE, sample_string
     paste0("input_", n + 1L)
   }
 
-  if (!is.null(registry$data_dictionary[[script_name]][[name]])) {
+  if (!is.null(registry$data_dictionary[[script_name]][[dict_name]])) {
     warning(
-      "tinytrail_dict(): '", name, "' already recorded for '", script_name,
+      "tinytrail_dict(): '", dict_name, "' already recorded for '", script_name,
       "' -- overwriting. Rename the data frame or use .name to distinguish stages.",
       call. = FALSE
     )
   }
 
-  clip <- function(v) {
-    if (!(is.character(v) || is.factor(v))) return(v)
-    s <- as.character(v)
-    if (is.finite(sample_string_length) && nchar(s) > sample_string_length)
-      paste0(substr(s, 1L, sample_string_length), "...")
-    else s
-  }
-
   entry <- list(
     columns = if (sample_values)
-      lapply(df, \(col) lapply(as.list(head(col, 5L)), clip))
+      lapply(df, \(col) lapply(as.list(head(col, .DICT_SAMPLE_N)),
+                               \(v) .truncate_sample_value(v, sample_string_length)))
     else
       as.list(names(df))
   )
 
-  registry$data_dictionary[[script_name]][[name]] <- entry
+  registry$data_dictionary[[script_name]][[dict_name]] <- entry
   .write_registry(registry, registry_path)
 
   invisible(df)

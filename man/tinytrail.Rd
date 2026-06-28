@@ -40,6 +40,7 @@ tmp <- tempfile()
 dir.create(tmp)
 writeLines("Version: 1.0", file.path(tmp, "DESCRIPTION"))
 old_wd <- setwd(tmp)
+options(.tinytrail_registry_path = NULL, .tinytrail_current_script = NULL)
 tinytrail(
   description    = "Clean and reshape survey data",
   data_source    = "Current Population Survey (BLS)",
