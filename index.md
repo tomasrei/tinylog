@@ -82,11 +82,26 @@ of the script. When one of these is called, the file path is quietly
 noted before the function runs as normal. No behaviour is changed and no
 files are modified. The hooks are removed automatically when the script
 exits, leaving your R session exactly as it was. For write functions not
-in the built-in list,
-[`tinytrail()`](https://tinytrail-r.github.io/tinytrail/reference/tinytrail.md)
-accepts an `extra_hooks` argument, or you can fall back to wrapping the
-path manually with
-[`tinytrail_write()`](https://tinytrail-r.github.io/tinytrail/reference/tinytrail_write.md).
+in the built-in list, pass a `data.frame` to `extra_hooks` with the
+function name and its file-path argument:
+
+``` r
+
+tinytrail(
+  description = "Export results",
+  extra_hooks = data.frame(
+    fn  = c("readr::write_csv", "ggplot2::ggsave"),
+    arg = c("file",             "filename")
+  )
+)
+```
+
+*(These two are already captured automatically — they’re shown here for
+illustration only.)*
+
+You can also fall back to wrapping the path manually with
+[`tinytrail_write()`](https://tinytrail-r.github.io/tinytrail/reference/tinytrail_write.md)
+for anything not covered.
 
 Since
 [`tinytrail_write()`](https://tinytrail-r.github.io/tinytrail/reference/tinytrail_write.md)

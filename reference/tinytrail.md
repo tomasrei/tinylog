@@ -54,12 +54,12 @@ tinytrail(
 
 - extra_hooks:
 
-  Named character vector of additional write functions to intercept when
-  `auto = TRUE`. Names are function identifiers (`"fn"` for a function
-  defined in the script, or `"pkg::fn"` for a package function), values
-  are the name of the file-path argument in that function. Example:
-  `c(my_save = "path", "sf::st_write" = "dsn")`. Functions from packages
-  that are not installed are silently skipped.
+  A `data.frame` with columns `fn` and `arg` specifying additional write
+  functions to intercept when `auto = TRUE`. `fn` is the function name
+  (`"my_save"` for a script-level function, or `"pkg::fn"` for a package
+  function). `arg` is the name of the file-path argument in that
+  function. Functions from packages that are not installed are silently
+  skipped.
 
 ## Value
 
@@ -95,6 +95,14 @@ withr::with_tempdir({
     )
     write.csv(mtcars, "cars.csv")
 
+    # extra_hooks: add a function not in the built-in list
+    tinytrail(
+      description    = "Export final tables",
+      record_runtime = FALSE,
+      name           = "export.R",
+      extra_hooks    = data.frame(fn = "tinytable::save_tt", arg = "output")
+    )
+
     # auto = FALSE: use explicit tinytrail_write() wrappers
     tinytrail(
       description    = "Sources and runs all project scripts in order",
@@ -105,6 +113,7 @@ withr::with_tempdir({
     )
   })
 })
+#> Error in .teardown_write_hooks(): could not find function ".teardown_write_hooks"
 #> Error in .teardown_write_hooks(): could not find function ".teardown_write_hooks"
 # }
 ```

@@ -90,12 +90,12 @@ record their output paths. Default <code>TRUE</code>. Set to <code>FALSE</code> 
 
 
 <dt id="arg-extra-hooks">extra_hooks<a class="anchor" aria-label="anchor" href="#arg-extra-hooks"></a></dt>
-<dd><p>Named character vector of additional write functions to
-intercept when <code>auto = TRUE</code>. Names are function identifiers (<code>"fn"</code> for a
-function defined in the script, or <code>"pkg::fn"</code> for a package function),
-values are the name of the file-path argument in that function. Example:
-<code>c(my_save = "path", "sf::st_write" = "dsn")</code>. Functions from packages
-that are not installed are silently skipped.</p></dd>
+<dd><p>A <code>data.frame</code> with columns <code>fn</code> and <code>arg</code> specifying
+additional write functions to intercept when <code>auto = TRUE</code>. <code>fn</code> is the
+function name (<code>"my_save"</code> for a script-level function, or <code>"pkg::fn"</code>
+for a package function). <code>arg</code> is the name of the file-path argument in
+that function. Functions from packages that are not installed are silently
+skipped.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -129,6 +129,14 @@ Set <code>auto = FALSE</code> to use explicit <code><a href="tinytrail_write.htm
 <span class="r-in"><span>    <span class="op">)</span></span></span>
 <span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">mtcars</span>, <span class="st">"cars.csv"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span>    <span class="co"># extra_hooks: add a function not in the built-in list</span></span></span>
+<span class="r-in"><span>    <span class="fu">tinytrail</span><span class="op">(</span></span></span>
+<span class="r-in"><span>      description    <span class="op">=</span> <span class="st">"Export final tables"</span>,</span></span>
+<span class="r-in"><span>      record_runtime <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>      name           <span class="op">=</span> <span class="st">"export.R"</span>,</span></span>
+<span class="r-in"><span>      extra_hooks    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>fn <span class="op">=</span> <span class="st">"tinytable::save_tt"</span>, arg <span class="op">=</span> <span class="st">"output"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span>    <span class="co"># auto = FALSE: use explicit tinytrail_write() wrappers</span></span></span>
 <span class="r-in"><span>    <span class="fu">tinytrail</span><span class="op">(</span></span></span>
 <span class="r-in"><span>      description    <span class="op">=</span> <span class="st">"Sources and runs all project scripts in order"</span>,</span></span>
@@ -139,6 +147,7 @@ Set <code>auto = FALSE</code> to use explicit <code><a href="tinytrail_write.htm
 <span class="r-in"><span>    <span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="op">}</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in .teardown_write_hooks():</span> could not find function ".teardown_write_hooks"</span>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in .teardown_write_hooks():</span> could not find function ".teardown_write_hooks"</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
