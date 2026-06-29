@@ -109,7 +109,7 @@
 .setup_write_hooks <- function(extra = NULL) {
   hooks <- .WRITE_HOOKS
   if (!is.null(extra)) {
-    for (i in seq_len(nrow(extra))) {
+    for (i in seq_along(extra$fn)) {
       spec <- .parse_hook_spec(extra$fn[i], extra$arg[i])
       hooks[[paste0(spec$pkg %||% "global", "::", spec$fn)]] <- spec
     }

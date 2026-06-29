@@ -57,19 +57,19 @@ scripts:
     - output/tab1.tex
 ```
 
-**How does the capturing work?** `tinytrail()` uses R's built-in `trace()` mechanism to temporarily observe common write functions — `write.csv()`, `saveRDS()`, `readr::write_csv()`, `ggplot2::ggsave()`, and more — for the duration of the script. When one of these is called, the file path is quietly noted before the function runs as normal. No behaviour is changed and no files are modified. The hooks are removed automatically when the script exits, leaving your R session exactly as it was. For write functions not in the built-in list, pass a `data.frame` to `extra_hooks` with the function name and its file-path argument:
+For write functions not in the built-in list, pass a `list` to `extra_hooks` with the function names and their file-path arguments:
 
 ```r
 tinytrail(
   description = "Export results",
-  extra_hooks = data.frame(
+  extra_hooks = list(
     fn  = c("readr::write_csv", "ggplot2::ggsave"),
     arg = c("file",             "filename")
   )
 )
 ```
 
-*(These two are already captured automatically — they're shown here for illustration only.)*
+*(These two functions are already captured automatically — they're shown here for illustration only.)*
 
 Optionally, pipe data frames through `tinytrail_dict()` to capture column names and sample values:
 
@@ -92,7 +92,7 @@ data_dictionary:
         response: ['yes', 'no', 'yes', 'yes', 'no']
 ```
 
-## tinytrail_write() is for when you want to track only a subset of the output
+tinytrail_write() is for when you want to track only a subset of the output
 
 Perhaps you only need to track a limited set of outputs, then you can hook `tinytrail_write()` those outputs:
 

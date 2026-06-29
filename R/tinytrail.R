@@ -88,12 +88,12 @@
 #' @param auto Logical. Automatically intercept common write functions and
 #'   record their output paths. Default `TRUE`. Set to `FALSE` to use explicit
 #'   `tinytrail_write()` calls instead.
-#' @param extra_hooks A `data.frame` with columns `fn` and `arg` specifying
-#'   additional write functions to intercept when `auto = TRUE`. `fn` is the
-#'   function name (`"my_save"` for a script-level function, or `"pkg::fn"`
-#'   for a package function). `arg` is the name of the file-path argument in
-#'   that function. Functions from packages that are not installed are silently
-#'   skipped.
+#' @param extra_hooks A `list` with elements `fn` and `arg` specifying
+#'   additional write functions to intercept when `auto = TRUE`. `fn` is a
+#'   character vector of function names (`"my_save"` for a script-level
+#'   function, or `"pkg::fn"` for a package function). `arg` is a character
+#'   vector of the corresponding file-path argument names. Functions from
+#'   packages that are not installed are silently skipped.
 #'
 #' @returns `name` (the script name), invisibly. Called for its side effect of
 #'   creating or updating the YAML trail file in the project root.
@@ -121,7 +121,7 @@
 #'       description    = "Export final tables",
 #'       record_runtime = FALSE,
 #'       name           = "export.R",
-#'       extra_hooks    = data.frame(fn = "tinytable::save_tt", arg = "output")
+#'       extra_hooks    = list(fn = "tinytable::save_tt", arg = "output")
 #'     )
 #'
 #'     # auto = FALSE: use explicit tinytrail_write() wrappers
@@ -286,7 +286,7 @@ tinytrail_write <- function(file) {
 #'   before truncating with `"..."`. Default `18L`.
 #'
 #' @return `df`, invisibly.
-#' @importFrom utils head
+
 #' @export
 #'
 #' @examples
@@ -343,7 +343,7 @@ tinytrail_dict <- function(df, .name = NULL, sample_values = TRUE, sample_string
 
   entry <- list(
     columns = if (sample_values)
-      lapply(df, \(col) lapply(as.list(head(col, .DICT_SAMPLE_N)),
+      lapply(df, \(col) lapply(as.list(col[sample(length(col), min(.DICT_SAMPLE_N, length(col)))]),
                                \(v) .truncate_sample_value(v, sample_string_length)))
     else
       as.list(names(df))
