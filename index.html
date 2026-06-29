@@ -110,27 +110,35 @@
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><em>(These two are already captured automatically — they’re shown here for illustration only.)</em></p>
-<p>You can also fall back to wrapping the path manually with <code><a href="reference/tinytrail_write.html">tinytrail_write()</a></code> for anything not covered.</p>
-<p>Since <code><a href="reference/tinytrail_write.html">tinytrail_write()</a></code> is just a thin wrapper</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="at">ggsave(</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="at">file = tinytrail_write(</span></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="at">here::here("output/tab1.tex")</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="at">))</span></span></code></pre></div>
-<p>works as expected.</p>
 <p>Optionally, pipe data frames through <code><a href="reference/tinytrail_dict.html">tinytrail_dict()</a></code> to capture column names and sample values:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># ... cleaning and preparing data ...</span></span>
 <span></span>
 <span><span class="va">dat</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/tinytrail_dict.html">tinytrail_dict</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>This adds a data dictionary entry to <code>_tinytrail.yaml</code>:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">data_dictionary</span><span class="kw">:</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="at">  </span><span class="fu">01_clean.R</span><span class="kw">:</span></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="at">    </span><span class="fu">dat</span><span class="kw">:</span></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="at">      </span><span class="fu">columns</span><span class="kw">:</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="at">        </span><span class="fu">id</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="dv">3</span><span class="kw">,</span><span class="at"> </span><span class="dv">4</span><span class="kw">,</span><span class="at"> </span><span class="dv">5</span><span class="kw">]</span></span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="at">        </span><span class="fu">age</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">34</span><span class="kw">,</span><span class="at"> </span><span class="dv">52</span><span class="kw">,</span><span class="at"> </span><span class="dv">28</span><span class="kw">,</span><span class="at"> </span><span class="dv">41</span><span class="kw">,</span><span class="at"> </span><span class="dv">37</span><span class="kw">]</span></span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="at">        </span><span class="fu">response</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">'yes'</span><span class="kw">,</span><span class="at"> </span><span class="st">'no'</span><span class="kw">,</span><span class="at"> </span><span class="st">'yes'</span><span class="kw">,</span><span class="at"> </span><span class="st">'yes'</span><span class="kw">,</span><span class="at"> </span><span class="st">'no'</span><span class="kw">]</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">data_dictionary</span><span class="kw">:</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="at">  </span><span class="fu">01_clean.R</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="at">    </span><span class="fu">dat</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="at">      </span><span class="fu">columns</span><span class="kw">:</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="at">        </span><span class="fu">id</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="dv">3</span><span class="kw">,</span><span class="at"> </span><span class="dv">4</span><span class="kw">,</span><span class="at"> </span><span class="dv">5</span><span class="kw">]</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="at">        </span><span class="fu">age</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">34</span><span class="kw">,</span><span class="at"> </span><span class="dv">52</span><span class="kw">,</span><span class="at"> </span><span class="dv">28</span><span class="kw">,</span><span class="at"> </span><span class="dv">41</span><span class="kw">,</span><span class="at"> </span><span class="dv">37</span><span class="kw">]</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="at">        </span><span class="fu">response</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">'yes'</span><span class="kw">,</span><span class="at"> </span><span class="st">'no'</span><span class="kw">,</span><span class="at"> </span><span class="st">'yes'</span><span class="kw">,</span><span class="at"> </span><span class="st">'yes'</span><span class="kw">,</span><span class="at"> </span><span class="st">'no'</span><span class="kw">]</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="tinytrail_write-is-for-when-you-want-to-track-only-a-subset-of-the-output">tinytrail_write() is for when you want to track only a subset of the output<a class="anchor" aria-label="anchor" href="#tinytrail_write-is-for-when-you-want-to-track-only-a-subset-of-the-output"></a>
+</h2>
+<p>Perhaps you only need to track a limited set of outputs, then you can hook <code><a href="reference/tinytrail_write.html">tinytrail_write()</a></code> those outputs:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="at">ggsave(</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="at">file = tinytrail_write(</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="at">  </span><span class="st">"output/tab1.tex"</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="at">))</span></span></code></pre></div>
+<p>Since <code><a href="reference/tinytrail_write.html">tinytrail_write()</a></code> is just a thin wrapper</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="at">ggsave(</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="at">file = tinytrail_write(</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="at">here::here("output/tab1.tex")</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="at">))</span></span></code></pre></div>
+<p>works as expected.</p>
 <p><img src="reference/figures/trail_sketch.png" width="100%" alt="A pencil sketch of an alpine landscape with winding trails"></p>
 </div>
 </div>
