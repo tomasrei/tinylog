@@ -3,4 +3,3 @@
 export(tinytrail)
 export(tinytrail_dict)
 export(tinytrail_write)
-importFrom(utils,head)

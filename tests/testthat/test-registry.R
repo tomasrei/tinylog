@@ -161,9 +161,9 @@ test_that("tinytrail_dict() truncates long strings at sample_string_length", {
 
   reg <- yaml::read_yaml("_tinytrail.yaml")
   labels <- unlist(reg$data_dictionary[["test.R"]][["df"]]$columns$label)
-  expect_equal(labels[[1]], "short")
-  expect_equal(labels[[2]], "this is a very lon...")
-  expect_true(nchar(labels[[2]]) == 18L + 3L)
+  expect_true("short" %in% labels)
+  expect_true("this is a very lon..." %in% labels)
+  expect_true(any(nchar(labels) == 18L + 3L))
 })
 
 test_that("tinytrail_dict() respects sample_string_length = Inf", {

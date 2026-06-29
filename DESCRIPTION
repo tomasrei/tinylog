@@ -1,5 +1,5 @@
 Package: tinytrail
-Title: Lightweight Auto-updating Project Tracker and Data Dictionary
+Title: Lightweight Auto-Updating Project Tracker and Data Dictionary
 Version: 0.1.0
 Authors@R:
     person("Tomas", "Reivinger", , "tomas.reivinger@gmail.com", role = c("aut", "cre"))

@@ -34,12 +34,12 @@ testing or when auto-detection is not available.}
 record their output paths. Default \code{TRUE}. Set to \code{FALSE} to use explicit
 \code{tinytrail_write()} calls instead.}
 
-\item{extra_hooks}{A \code{data.frame} with columns \code{fn} and \code{arg} specifying
-additional write functions to intercept when \code{auto = TRUE}. \code{fn} is the
-function name (\code{"my_save"} for a script-level function, or \code{"pkg::fn"}
-for a package function). \code{arg} is the name of the file-path argument in
-that function. Functions from packages that are not installed are silently
-skipped.}
+\item{extra_hooks}{A \code{list} with elements \code{fn} and \code{arg} specifying
+additional write functions to intercept when \code{auto = TRUE}. \code{fn} is a
+character vector of function names (\code{"my_save"} for a script-level
+function, or \code{"pkg::fn"} for a package function). \code{arg} is a character
+vector of the corresponding file-path argument names. Functions from
+packages that are not installed are silently skipped.}
 }
 \value{
 \code{name} (the script name), invisibly. Called for its side effect of
@@ -77,7 +77,7 @@ withr::with_tempdir({
       description    = "Export final tables",
       record_runtime = FALSE,
       name           = "export.R",
-      extra_hooks    = data.frame(fn = "tinytable::save_tt", arg = "output")
+      extra_hooks    = list(fn = "tinytable::save_tt", arg = "output")
     )
 
     # auto = FALSE: use explicit tinytrail_write() wrappers
