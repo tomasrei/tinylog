@@ -54,12 +54,12 @@ tinytrail(
 
 - extra_hooks:
 
-  A `data.frame` with columns `fn` and `arg` specifying additional write
-  functions to intercept when `auto = TRUE`. `fn` is the function name
-  (`"my_save"` for a script-level function, or `"pkg::fn"` for a package
-  function). `arg` is the name of the file-path argument in that
-  function. Functions from packages that are not installed are silently
-  skipped.
+  A `list` with elements `fn` and `arg` specifying additional write
+  functions to intercept when `auto = TRUE`. `fn` is a character vector
+  of function names (`"my_save"` for a script-level function, or
+  `"pkg::fn"` for a package function). `arg` is a character vector of
+  the corresponding file-path argument names. Functions from packages
+  that are not installed are silently skipped.
 
 ## Value
 
@@ -103,7 +103,7 @@ withr::with_tempdir({
       description    = "Export final tables",
       record_runtime = FALSE,
       name           = "export.R",
-      extra_hooks    = data.frame(fn = "tinytable::save_tt", arg = "output")
+      extra_hooks    = list(fn = "tinytable::save_tt", arg = "output")
     )
 
     # auto = FALSE: use explicit tinytrail_write() wrappers

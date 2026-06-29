@@ -90,12 +90,12 @@ record their output paths. Default <code>TRUE</code>. Set to <code>FALSE</code> 
 
 
 <dt id="arg-extra-hooks">extra_hooks<a class="anchor" aria-label="anchor" href="#arg-extra-hooks"></a></dt>
-<dd><p>A <code>data.frame</code> with columns <code>fn</code> and <code>arg</code> specifying
-additional write functions to intercept when <code>auto = TRUE</code>. <code>fn</code> is the
-function name (<code>"my_save"</code> for a script-level function, or <code>"pkg::fn"</code>
-for a package function). <code>arg</code> is the name of the file-path argument in
-that function. Functions from packages that are not installed are silently
-skipped.</p></dd>
+<dd><p>A <code>list</code> with elements <code>fn</code> and <code>arg</code> specifying
+additional write functions to intercept when <code>auto = TRUE</code>. <code>fn</code> is a
+character vector of function names (<code>"my_save"</code> for a script-level
+function, or <code>"pkg::fn"</code> for a package function). <code>arg</code> is a character
+vector of the corresponding file-path argument names. Functions from
+packages that are not installed are silently skipped.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -134,7 +134,7 @@ Set <code>auto = FALSE</code> to use explicit <code><a href="tinytrail_write.htm
 <span class="r-in"><span>      description    <span class="op">=</span> <span class="st">"Export final tables"</span>,</span></span>
 <span class="r-in"><span>      record_runtime <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
 <span class="r-in"><span>      name           <span class="op">=</span> <span class="st">"export.R"</span>,</span></span>
-<span class="r-in"><span>      extra_hooks    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>fn <span class="op">=</span> <span class="st">"tinytable::save_tt"</span>, arg <span class="op">=</span> <span class="st">"output"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>      extra_hooks    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>fn <span class="op">=</span> <span class="st">"tinytable::save_tt"</span>, arg <span class="op">=</span> <span class="st">"output"</span><span class="op">)</span></span></span>
 <span class="r-in"><span>    <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span>    <span class="co"># auto = FALSE: use explicit tinytrail_write() wrappers</span></span></span>
