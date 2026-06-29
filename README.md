@@ -71,21 +71,6 @@ tinytrail(
 
 *(These two are already captured automatically — they're shown here for illustration only.)*
 
-You can also fall back to wrapping the path manually with `tinytrail_write()` for anything not covered.
-
-Since `tinytrail_write()` is just a thin wrapper
-
-```yaml
-ggsave(
-file = tinytrail_write(
-here::here("output/tab1.tex")
-))
-```
-
-works as expected.
-
-
-
 Optionally, pipe data frames through `tinytrail_dict()` to capture column names and sample values:
 
 ```r
@@ -106,5 +91,30 @@ data_dictionary:
         age: [34, 52, 28, 41, 37]
         response: ['yes', 'no', 'yes', 'yes', 'no']
 ```
+
+## tinytrail_write() is for when you want to track only a subset of the output
+
+Perhaps you only need to track a limited set of outputs, then you can hook `tinytrail_write()` those outputs:
+
+```yaml
+ggsave(
+file = tinytrail_write(
+  "output/tab1.tex"
+))
+```
+
+
+Since `tinytrail_write()` is just a thin wrapper
+
+```yaml
+ggsave(
+file = tinytrail_write(
+here::here("output/tab1.tex")
+))
+```
+
+works as expected.
+
+
 
 <img src="man/figures/trail_sketch.png" width="100%" alt="A pencil sketch of an alpine landscape with winding trails"/>
