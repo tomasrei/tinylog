@@ -13,6 +13,15 @@ Duration: 26.4s
 
 0 errors ✔ | 0 warnings ✔ | 2 notes ✖
 
+## win-builder (R-devel)
+
+0 errors ✔ | 0 warnings ✔ | 1 note ✖
+
+❯ checking CRAN incoming feasibility ... NOTE
+  Maintainer: 'Tomas Reivinger <tomas.reivinger@gmail.com>'
+
+  New submission
+
 ## Reverse dependencies
 
 This is a new package. There are currently no downstream dependencies.
